@@ -1,1 +1,1 @@
-web: go s3zipper
+web: go main
