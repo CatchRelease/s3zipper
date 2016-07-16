@@ -1,9 +1,28 @@
 {
-	"ImportPath": ".",
+	"ImportPath": "github.com/catchrelease/s3zipper",
 	"GoVersion": "go1.6",
 	"GodepVersion": "v74",
 	"Packages": [
 		"./..."
 	],
-	"Deps": []
+	"Deps": [
+		{
+			"ImportPath": "github.com/AdRoll/goamz/aws",
+			"Rev": "34e96a017307e0442cd8e5f0c15e199c9934563f"
+		},
+		{
+			"ImportPath": "github.com/AdRoll/goamz/s3",
+			"Rev": "34e96a017307e0442cd8e5f0c15e199c9934563f"
+		},
+		{
+			"ImportPath": "github.com/garyburd/redigo/internal",
+			"Comment": "v1.0.0-1-gb8dc900",
+			"Rev": "b8dc90050f24c1a73a52f107f3f575be67b21b7c"
+		},
+		{
+			"ImportPath": "github.com/garyburd/redigo/redis",
+			"Comment": "v1.0.0-1-gb8dc900",
+			"Rev": "b8dc90050f24c1a73a52f107f3f575be67b21b7c"
+		}
+	]
 }
