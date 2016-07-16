@@ -12,9 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
 	"net/http"
-
 	"github.com/AdRoll/goamz/aws"
 	"github.com/AdRoll/goamz/s3"
 	redigo "github.com/garyburd/redigo/redis"
@@ -51,11 +49,27 @@ func main() {
 		return
 	}
 
-	configFile, _ := os.Open("conf.json")
-	decoder := json.NewDecoder(configFile)
-	err := decoder.Decode(&config)
+	//configFile, _ := os.Open("conf.json")
+	//decoder := json.NewDecoder(configFile)
+	//err := decoder.Decode(&config)
+	//if err != nil {
+	//	panic("Error reading conf")
+	//}
+
+	port, err := strconv.Atoi(os.Getenv("PORT"))
+
 	if err != nil {
-		panic("Error reading conf")
+		port = 8000
+	}
+
+	config := Configuration{
+		AccessKey: os.Getenv("AWS_ACCESS_KEY_ID"),
+		SecretKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		Bucket: os.Getenv("AWS_BUCKET"),
+		Region: os.Getenv("AWS_REGION"),
+		RedisServerAndPort: os.Getenv("REDISTOGO_URL"),
+		Port: port,
+
 	}
 
 	initAwsBucket()

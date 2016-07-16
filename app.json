@@ -1,0 +1,13 @@
+{
+  "name": "s3zipper",
+  "description": "Zip and Serve C&R Assets",
+  "keywords": [
+    "go",
+    "zip",
+    "C&R"
+  ],
+  "image": "heroku/go:1.6",
+  "mount_dir": "src/github.com/catchrelease/s3zipper",
+  "website": "http://github.com/catchrelease/s3zipper",
+  "repository": "http://github.com/catchrelease/s3zipper"
+}
