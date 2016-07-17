@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"github.com/AdRoll/goamz/aws"
 	"github.com/AdRoll/goamz/s3"
+	"github.com/soveran/redisurl"
 	redigo "github.com/garyburd/redigo/redis"
 )
 
@@ -23,6 +24,7 @@ type Configuration struct {
 	SecretKey          string
 	Bucket             string
 	Region             string
+	Redis              string
 	RedisServerAndPort string
 	Port               int
 }
@@ -59,6 +61,7 @@ func main() {
 		SecretKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
 		Bucket: os.Getenv("AWS_BUCKET"),
 		Region: os.Getenv("AWS_REGION"),
+		Redis: os.Getenv("REDIS"),
 		RedisServerAndPort: os.Getenv("REDISTOGO_URL"),
 		Port: port,
 	}
@@ -67,7 +70,8 @@ func main() {
 	fmt.Println("AWS SECRET KEY", config.SecretKey)
 	fmt.Println("AWS REGION", config.Region)
 	fmt.Println("AWS BUCKET", config.Bucket)
-	fmt.Println("REDIS", config.RedisServerAndPort)
+	fmt.Println("REDIS", config.Redis)
+	fmt.Println("REDISTOGO_URL", config.RedisServerAndPort)
 
 	initAwsBucket()
 	InitRedis()
@@ -119,7 +123,13 @@ func InitRedis() {
 		MaxIdle:     10,
 		IdleTimeout: 1 * time.Second,
 		Dial: func() (redigo.Conn, error) {
-			return redigo.Dial("tcp", config.RedisServerAndPort)
+			if config.Redis != "" {
+				fmt.Println("Using normal Redis", config.Redis)
+				return redigo.Dial("tcp", config.Redis)
+			} else {
+				fmt.Println("Using RedisToGo Redis", config.RedisServerAndPort)
+				return redisurl.ConnectToURL(config.RedisServerAndPort)
+			}
 		},
 		TestOnBorrow: func(c redigo.Conn, t time.Time) (err error) {
 			_, err = c.Do("PING")
