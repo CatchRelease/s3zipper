@@ -35,7 +35,6 @@ type RedisFile struct {
 	FileName string
 	Folder   string
 	S3Path   string
-	// Optional - we use are Teamwork.com but feel free to rmove
 	FileId       int64 `json:",string"`
 	ProjectId    int64 `json:",string"`
 	ProjectName  string
@@ -48,13 +47,6 @@ func main() {
 		test()
 		return
 	}
-
-	//configFile, _ := os.Open("conf.json")
-	//decoder := json.NewDecoder(configFile)
-	//err := decoder.Decode(&config)
-	//if err != nil {
-	//	panic("Error reading conf")
-	//}
 
 	port, err := strconv.Atoi(os.Getenv("PORT"))
 
@@ -69,7 +61,6 @@ func main() {
 		Region: os.Getenv("AWS_REGION"),
 		RedisServerAndPort: os.Getenv("REDISTOGO_URL"),
 		Port: port,
-
 	}
 
 	fmt.Println("AWS ACCESS KEY", config.AccessKey)
@@ -144,13 +135,6 @@ func InitRedis() {
 var makeSafeFileName = regexp.MustCompile(`[#<>:"/\|?*\\]`)
 
 func getFilesFromRedis(ref string) (files []*RedisFile, err error) {
-
-	// Testing - enable to test. Remove later.
-	if 1 == 0 && ref == "test" {
-		files = append(files, &RedisFile{FileName: "test.zip", Folder: "", S3Path: "test/test.zip"}) // Edit and dplicate line to test
-		return
-	}
-
 	redis := redisPool.Get()
 	defer redis.Close()
 
@@ -174,9 +158,6 @@ func getFilesFromRedis(ref string) (files []*RedisFile, err error) {
 	if err != nil {
 		err = errors.New("Error decoding json: " + string(resultByte))
 	}
-
-	// Convert mofified date strings to time objects
-	parseFileDates(files)
 
 	return
 }
