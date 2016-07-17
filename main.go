@@ -62,7 +62,7 @@ func main() {
 		port = 8000
 	}
 
-	config := Configuration{
+	config = Configuration{
 		AccessKey: os.Getenv("AWS_ACCESS_KEY_ID"),
 		SecretKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
 		Bucket: os.Getenv("AWS_BUCKET"),
@@ -71,6 +71,12 @@ func main() {
 		Port: port,
 
 	}
+
+	fmt.Println("AWS ACCESS KEY", config.AccessKey)
+	fmt.Println("AWS SECRET KEY", config.SecretKey)
+	fmt.Println("AWS REGION", config.Region)
+	fmt.Println("AWS BUCKET", config.Bucket)
+	fmt.Println("REDIS", config.RedisServerAndPort)
 
 	initAwsBucket()
 	InitRedis()
