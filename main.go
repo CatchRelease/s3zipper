@@ -16,7 +16,7 @@ import (
 	"github.com/AdRoll/goamz/aws"
 	"github.com/AdRoll/goamz/s3"
 	"github.com/soveran/redisurl"
-	redigo "github.com/garyburd/redigo/redis"
+	"github.com/garyburd/redigo/redis"
 )
 
 type Configuration struct {
@@ -31,7 +31,7 @@ type Configuration struct {
 
 var config = Configuration{}
 var aws_bucket *s3.Bucket
-var redisPool *redigo.Pool
+var redisPool *redis.Pool
 
 type RedisFile struct {
 	FileName string
@@ -119,19 +119,19 @@ func initAwsBucket() {
 }
 
 func InitRedis() {
-	redisPool = &redigo.Pool{
+	redisPool = &redis.Pool{
 		MaxIdle:     10,
 		IdleTimeout: 1 * time.Second,
-		Dial: func() (redigo.Conn, error) {
+		Dial: func() (redis.Conn, error) {
 			if config.Redis != "" {
 				fmt.Println("Using normal Redis", config.Redis)
-				return redigo.Dial("tcp", config.Redis)
+				return redis.Dial("tcp", config.Redis)
 			} else {
 				fmt.Println("Using RedisToGo Redis", config.RedisServerAndPort)
 				return redisurl.ConnectToURL(config.RedisServerAndPort)
 			}
 		},
-		TestOnBorrow: func(c redigo.Conn, t time.Time) (err error) {
+		TestOnBorrow: func(c redis.Conn, t time.Time) (err error) {
 			_, err = c.Do("PING")
 			if err != nil {
 				panic("Error connecting to redis")
