@@ -13,3 +13,16 @@ dependencies:
 test:
   override:
     - echo "skipping tests"
+
+deployment:
+  production:
+    branch: master
+    commands:
+      - git push git@heroku.com:s3zipper-prod.git $CIRCLE_SHA1:refs/heads/master
+
+  staging:
+    branch: work
+    commands:
+      - git fetch origin --unshallow
+      - git push git@heroku.com:s3zipper-staging.git $CIRCLE_SHA1:refs/heads/master
+
