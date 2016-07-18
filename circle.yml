@@ -18,6 +18,7 @@ deployment:
   production:
     branch: master
     commands:
+      - git fetch origin --unshallow
       - git push git@heroku.com:s3zipper-production.git $CIRCLE_SHA1:refs/heads/master
 
   staging:
