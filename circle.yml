@@ -18,7 +18,7 @@ deployment:
   production:
     branch: master
     commands:
-      - git push git@heroku.com:s3zipper-prod.git $CIRCLE_SHA1:refs/heads/master
+      - git push git@heroku.com:s3zipper-production.git $CIRCLE_SHA1:refs/heads/master
 
   staging:
     branch: work
