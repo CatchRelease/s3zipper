@@ -12,11 +12,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+        "database/sql"
 	"net/http"
 	"github.com/AdRoll/goamz/aws"
 	"github.com/AdRoll/goamz/s3"
-	"github.com/soveran/redisurl"
-	"github.com/garyburd/redigo/redis"
+        _ "github.com/lib/pq"
 )
 
 type Configuration struct {
@@ -24,16 +24,14 @@ type Configuration struct {
 	SecretKey          string
 	Bucket             string
 	Region             string
-	Redis              string
-	RedisServerAndPort string
+	Database           string
 	Port               int
 }
 
 var config = Configuration{}
 var aws_bucket *s3.Bucket
-var redisPool *redis.Pool
 
-type RedisFile struct {
+type FileHash struct {
 	FileName string
 	Folder   string
 	S3Path   string
@@ -43,6 +41,10 @@ type RedisFile struct {
 	Modified     string
 	ModifiedTime time.Time
 }
+
+var (
+  db *sql.DB
+)
 
 func main() {
 	if 1 == 0 {
@@ -61,8 +63,7 @@ func main() {
 		SecretKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
 		Bucket: os.Getenv("AWS_BUCKET"),
 		Region: os.Getenv("AWS_REGION"),
-		Redis: os.Getenv("REDIS"),
-		RedisServerAndPort: os.Getenv("REDISTOGO_URL"),
+		Database: os.Getenv("DATABASE_URL"),
 		Port: port,
 	}
 
@@ -70,11 +71,10 @@ func main() {
 	fmt.Println("AWS SECRET KEY", config.SecretKey)
 	fmt.Println("AWS REGION", config.Region)
 	fmt.Println("AWS BUCKET", config.Bucket)
-	fmt.Println("REDIS", config.Redis)
-	fmt.Println("REDISTOGO_URL", config.RedisServerAndPort)
+	fmt.Println("DATABASE_URL", config.Database)
 
 	initAwsBucket()
-	InitRedis()
+	initDB()
 
 	fmt.Println("Running on port", config.Port)
 	http.HandleFunc("/", handler)
@@ -83,7 +83,7 @@ func main() {
 
 func test() {
 	var err error
-	var files []*RedisFile
+	var files []*FileHash
 	jsonData := "[{\"S3Path\":\"1\\/p23216.tf_A89A5199-F04D-A2DE-5824E635AC398956.Avis_Rent_A_Car_Print_Reservation.pdf\",\"FileVersionId\":\"4164\",\"FileName\":\"Avis Rent A Car_ Print Reservation.pdf\",\"ProjectName\":\"Superman\",\"ProjectId\":\"23216\",\"Folder\":\"\",\"FileId\":\"4169\"},{\"modified\":\"2015-07-18T02:05:04Z\",\"S3Path\":\"1\\/p23216.tf_351310E0-DF49-701F-60601109C2792187.a1.jpg\",\"FileVersionId\":\"4165\",\"FileName\":\"a1.jpg\",\"ProjectName\":\"Superman\",\"ProjectId\":\"23216\",\"Folder\":\"Level 1\\/Level 2 x\\/Level 3\",\"FileId\":\"4170\"}]"
 
 	resultByte := []byte(jsonData)
@@ -96,7 +96,7 @@ func test() {
 	parseFileDates(files)
 }
 
-func parseFileDates(files []*RedisFile) {
+func parseFileDates(files []*FileHash) {
 	layout := "2006-01-02T15:04:05Z"
 	for _, file := range files {
 		t, err := time.Parse(layout, file.Modified)
@@ -118,55 +118,41 @@ func initAwsBucket() {
 	aws_bucket = s3.New(auth, aws.GetRegion(config.Region)).Bucket(config.Bucket)
 }
 
-func InitRedis() {
-	redisPool = &redis.Pool{
-		MaxIdle:     10,
-		IdleTimeout: 1 * time.Second,
-		Dial: func() (redis.Conn, error) {
-			if config.Redis != "" {
-				fmt.Println("Using normal Redis", config.Redis)
-				return redis.Dial("tcp", config.Redis)
-			} else {
-				fmt.Println("Using RedisToGo Redis", config.RedisServerAndPort)
-				return redisurl.ConnectToURL(config.RedisServerAndPort)
-			}
-		},
-		TestOnBorrow: func(c redis.Conn, t time.Time) (err error) {
-			_, err = c.Do("PING")
-			if err != nil {
-				panic("Error connecting to redis")
-			}
-			return
-		},
+func initDB() {
+	var err error
+	db, err = sql.Open("postgres", config.Database)
+
+	if err != nil {
+		log.Fatalf("Error opening database: %q", err)
 	}
 }
 
 // Remove all other unrecognised characters apart from
 var makeSafeFileName = regexp.MustCompile(`[#<>:"/\|?*\\]`)
 
-func getFilesFromRedis(ref string) (files []*RedisFile, err error) {
-	redis := redisPool.Get()
-	defer redis.Close()
+func getFilesFromDB(ref string) (files []*FileHash, err error) {
+	var result string
 
-	// Get the value from Redis
-	result, err := redis.Do("GET", "zip:"+ref)
-	if err != nil || result == nil {
-		err = errors.New("Access Denied (sorry your link has timed out)")
-		return
+	db_err := db.QueryRow("SELECT files_hash FROM batch_downloads WHERE key = $1", ref).Scan(&result)
+
+	switch {
+		case db_err == sql.ErrNoRows:
+			err = errors.New("Could not find that batch download.")
+			return
+		case db_err != nil:
+			err = db_err
+			return
 	}
 
-	// Convert to bytes
-	var resultByte []byte
-	var ok bool
-	if resultByte, ok = result.([]byte); !ok {
-		err = errors.New("Error converting data stream to bytes")
+	if result == "" {
+		err = errors.New("Could not find that batch download.")
 		return
 	}
 
 	// Decode JSON
-	err = json.Unmarshal(resultByte, &files)
+	err = json.Unmarshal([]byte(result), &files)
 	if err != nil {
-		err = errors.New("Error decoding json: " + string(resultByte))
+		err = errors.New("Error decoding json: " + string(result))
 	}
 
 	return
@@ -194,7 +180,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		downloadas = append(downloadas, "download.zip")
 	}
 
-	files, err := getFilesFromRedis(ref)
+	files, err := getFilesFromDB(ref)
 	if err != nil {
 		http.Error(w, err.Error(), 403)
 		log.Printf("%s\t%s\t%s", r.Method, r.RequestURI, err.Error())

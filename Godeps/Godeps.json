@@ -12,18 +12,14 @@
 			"Rev": "34e96a017307e0442cd8e5f0c15e199c9934563f"
 		},
 		{
-			"ImportPath": "github.com/garyburd/redigo/internal",
-			"Comment": "v1.0.0-1-gb8dc900",
-			"Rev": "b8dc90050f24c1a73a52f107f3f575be67b21b7c"
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-115-ga11ab5d",
+			"Rev": "a11ab5d56294722de05a36a5082729a80be6eed0"
 		},
 		{
-			"ImportPath": "github.com/garyburd/redigo/redis",
-			"Comment": "v1.0.0-1-gb8dc900",
-			"Rev": "b8dc90050f24c1a73a52f107f3f575be67b21b7c"
-		},
-		{
-			"ImportPath": "github.com/soveran/redisurl",
-			"Rev": "ac42ec99510b5f21d11560d316adcc5bc41f0915"
+			"ImportPath": "github.com/lib/pq/oid",
+			"Comment": "go1.0-cutoff-115-ga11ab5d",
+			"Rev": "a11ab5d56294722de05a36a5082729a80be6eed0"
 		}
 	]
 }
