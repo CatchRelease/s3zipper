@@ -23,7 +23,6 @@ Microservice that Servers Streaming Zip file from S3 Securely. Uses Postgres to 
 * AWS_SECRET_ACCESS_KEY - AWS Secret Key
 * AWS_BUCKET - AWS S3 Bucket
 * AWS_REGION - AWS S3 Region
-* REDIS - Redis Server and Port (non-heroku)
 * DATABASE_URL - Database URL (postgres://username:password@host:port/database)
 * PORT - Application server port, defaults to 8000
 
