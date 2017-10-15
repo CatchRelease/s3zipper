@@ -1,0 +1,17 @@
+version: '3.3'
+services:
+  s3zipper:
+    image: candr/s3zipper
+    build:
+      context: .
+    network_mode: host
+    ports:
+      - '8000:8000'
+    environment:
+      AWS_ACCESS_KEY_ID: '${AWS_ACCESS_KEY_ID}'
+      AWS_SECRET_ACCESS_KEY: '${AWS_SECRET_ACCESS_KEY}'
+      AWS_BUCKET: catchandrelease-assets-development
+      AWS_REGION: us-east-1
+      DATABASE_URL: 'postgresql://docker@127.0.0.1:5432/catchandrelease_development'
+      REDIS: 'redis://127.0.0.1:6379'
+      PORT: 8000

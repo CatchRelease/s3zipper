@@ -30,3 +30,9 @@ Microservice that Servers Streaming Zip file from S3 Securely. Uses Postgres to 
 ```
 AWS_ACCESS_KEY_ID={FILL_ME_IN} AWS_SECRET_ACCESS_KEY={FILL_ME_IN} AWS_REGION=us-east-1 AWS_BUCKET=catchandrelease-assets-development DATABASE_URL=postgres://username:password@localhost:5432/catchandrelease_development?sslmode=disable go run main.go
 ```
+
+## Docker Setup
+
+The easiest way to run s3zipper locally is via Docker. Install [Docker](https://docs.docker.com/engine/installation/), [docker-compose](https://docs.docker.com/compose/install/), then run `docker-compose up` from the repo root. You'll need the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY available via the environment. 
+
+`docker-compose build` will update the image in your local repo for code changes, etc.
