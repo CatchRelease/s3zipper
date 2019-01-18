@@ -1,7 +1,7 @@
 {
 	"ImportPath": "github.com/catchrelease/s3zipper",
-	"GoVersion": "go1.6",
-	"GodepVersion": "v74",
+	"GoVersion": "go1.11",
+	"GodepVersion": "v80",
 	"Deps": [
 		{
 			"ImportPath": "github.com/AdRoll/goamz/aws",

@@ -6,7 +6,7 @@
     "zip",
     "C&R"
   ],
-  "image": "heroku/go:1.6",
+  "image": "heroku/go:1.11",
   "mount_dir": "src/github.com/catchrelease/s3zipper",
   "website": "http://github.com/catchrelease/s3zipper",
   "repository": "http://github.com/catchrelease/s3zipper"
