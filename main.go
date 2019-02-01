@@ -95,7 +95,7 @@ func main() {
 	}
 
 	if config.RollbarToken != "" {
-	    rollbar.WrapAndWait(finishSetupAndListen)
+		rollbar.WrapAndWait(finishSetupAndListen)
 	} else {
 		finishSetupAndListen()
 	}
@@ -161,10 +161,10 @@ func initDB() {
 		panic(err)
 	}
 
-    err = db.Ping()
-    if err != nil {
-      panic(err)
-    }
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Remove all other unrecognised characters apart from
