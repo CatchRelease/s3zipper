@@ -2,39 +2,39 @@ package main
 
 import (
 	"archive/zip"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/AdRoll/goamz/aws"
+	"github.com/AdRoll/goamz/s3"
+	_ "github.com/lib/pq"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
-        "database/sql"
-	"net/http"
-	"github.com/AdRoll/goamz/aws"
-	"github.com/AdRoll/goamz/s3"
-        _ "github.com/lib/pq"
 )
 
 type Configuration struct {
-	AccessKey          string
-	SecretKey          string
-	Bucket             string
-	Region             string
-	Database           string
-	Port               int
+	AccessKey string
+	SecretKey string
+	Bucket    string
+	Region    string
+	Database  string
+	Port      int
 }
 
 var config = Configuration{}
 var aws_bucket *s3.Bucket
 
 type FileHash struct {
-	FileName string
-	Folder   string
-	S3Path   string
+	FileName     string
+	Folder       string
+	S3Path       string
 	FileId       int64 `json:",string"`
 	ProjectId    int64 `json:",string"`
 	ProjectName  string
@@ -43,7 +43,7 @@ type FileHash struct {
 }
 
 var (
-  db *sql.DB
+	db *sql.DB
 )
 
 func main() {
@@ -61,10 +61,10 @@ func main() {
 	config = Configuration{
 		AccessKey: os.Getenv("AWS_ACCESS_KEY_ID"),
 		SecretKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
-		Bucket: os.Getenv("AWS_BUCKET"),
-		Region: os.Getenv("AWS_REGION"),
-		Database: os.Getenv("DATABASE_URL"),
-		Port: port,
+		Bucket:    os.Getenv("AWS_BUCKET"),
+		Region:    os.Getenv("AWS_REGION"),
+		Database:  os.Getenv("DATABASE_URL"),
+		Port:      port,
 	}
 
 	fmt.Println("AWS ACCESS KEY", config.AccessKey)
@@ -136,12 +136,12 @@ func getFilesFromDB(ref string) (files []*FileHash, err error) {
 	db_err := db.QueryRow("SELECT files_hash FROM batch_downloads WHERE key = $1", ref).Scan(&result)
 
 	switch {
-		case db_err == sql.ErrNoRows:
-			err = errors.New("Could not find that batch download.")
-			return
-		case db_err != nil:
-			err = db_err
-			return
+	case db_err == sql.ErrNoRows:
+		err = errors.New("Could not find that batch download.")
+		return
+	case db_err != nil:
+		err = db_err
+		return
 	}
 
 	if result == "" {
