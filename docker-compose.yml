@@ -6,12 +6,12 @@ services:
       context: .
     network_mode: host
     ports:
-      - '8000:8000'
+      - '8000:7766'
     environment:
       AWS_ACCESS_KEY_ID: '${AWS_ACCESS_KEY_ID}'
       AWS_SECRET_ACCESS_KEY: '${AWS_SECRET_ACCESS_KEY}'
       AWS_BUCKET: catchandrelease-assets-development
       AWS_REGION: us-east-1
-      DATABASE_URL: 'postgresql://docker@127.0.0.1:5432/catchandrelease_development'
+      DATABASE_URL: 'postgresql://docker@127.0.0.1:5432/catchandrelease_development?sslmode=disable'
       REDIS: 'redis://127.0.0.1:6379'
-      PORT: 8000
+      PORT: 7766 
