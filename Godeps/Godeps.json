@@ -20,6 +20,11 @@
 			"ImportPath": "github.com/lib/pq/oid",
 			"Comment": "go1.0-cutoff-115-ga11ab5d",
 			"Rev": "a11ab5d56294722de05a36a5082729a80be6eed0"
+		},
+		{
+			"ImportPath": "github.com/rollbar/rollbar-go",
+			"Comment": "v1.0.2",
+			"Rev": "d450a931d7a085523b60f0f7c98487333a8ce5fa"
 		}
 	]
 }
