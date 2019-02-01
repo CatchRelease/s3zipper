@@ -2,39 +2,44 @@ package main
 
 import (
 	"archive/zip"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/AdRoll/goamz/aws"
+	"github.com/AdRoll/goamz/s3"
+	_ "github.com/lib/pq"
+	"github.com/rollbar/rollbar-go"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
-        "database/sql"
-	"net/http"
-	"github.com/AdRoll/goamz/aws"
-	"github.com/AdRoll/goamz/s3"
-        _ "github.com/lib/pq"
 )
 
 type Configuration struct {
-	AccessKey          string
-	SecretKey          string
-	Bucket             string
-	Region             string
-	Database           string
-	Port               int
+	AccessKey    string
+	SecretKey    string
+	Bucket       string
+	Region       string
+	Database     string
+	Port         int
+	RollbarToken string
+	Environment  string
+	GitCommit    string
+	GithubRepo   string
 }
 
 var config = Configuration{}
 var aws_bucket *s3.Bucket
 
 type FileHash struct {
-	FileName string
-	Folder   string
-	S3Path   string
+	FileName     string
+	Folder       string
+	S3Path       string
 	FileId       int64 `json:",string"`
 	ProjectId    int64 `json:",string"`
 	ProjectName  string
@@ -43,7 +48,7 @@ type FileHash struct {
 }
 
 var (
-  db *sql.DB
+	db *sql.DB
 )
 
 func main() {
@@ -59,26 +64,41 @@ func main() {
 	}
 
 	config = Configuration{
-		AccessKey: os.Getenv("AWS_ACCESS_KEY_ID"),
-		SecretKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
-		Bucket: os.Getenv("AWS_BUCKET"),
-		Region: os.Getenv("AWS_REGION"),
-		Database: os.Getenv("DATABASE_URL"),
-		Port: port,
+		AccessKey:    os.Getenv("AWS_ACCESS_KEY_ID"),
+		SecretKey:    os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		Bucket:       os.Getenv("AWS_BUCKET"),
+		Region:       os.Getenv("AWS_REGION"),
+		Database:     os.Getenv("DATABASE_URL"),
+		Port:         port,
+		RollbarToken: os.Getenv("ROLLBAR_KEY"),
+		Environment:  getenvOrDefault("APP_ENV", "development"),
+		GitCommit:    os.Getenv("SOURCE_VERSION"),
+		GithubRepo:   "github.com/CatchRelease/s3zipper",
 	}
 
-	fmt.Println("AWS ACCESS KEY", config.AccessKey)
-	fmt.Println("AWS SECRET KEY", config.SecretKey)
+	fmt.Println("ENVIRONMENT", config.Environment)
+	fmt.Println("AWS ACCESS KEY ID", config.AccessKey)
+	fmt.Println("AWS SECRET ACCESS KEY", config.SecretKey)
 	fmt.Println("AWS REGION", config.Region)
 	fmt.Println("AWS BUCKET", config.Bucket)
 	fmt.Println("DATABASE_URL", config.Database)
 
-	initAwsBucket()
-	initDB()
+	initRollbar()
 
-	fmt.Println("Running on port", config.Port)
-	http.HandleFunc("/", handler)
-	http.ListenAndServe(":"+strconv.Itoa(config.Port), nil)
+	var finishSetupAndListen = func() {
+		initAwsBucket()
+		initDB()
+
+		fmt.Println("Running on port", config.Port)
+		http.HandleFunc("/", handler)
+		log.Fatal(http.ListenAndServe(":"+strconv.Itoa(config.Port), nil))
+	}
+
+	if config.RollbarToken != "" {
+		rollbar.WrapAndWait(finishSetupAndListen)
+	} else {
+		finishSetupAndListen()
+	}
 }
 
 func test() {
@@ -108,6 +128,21 @@ func parseFileDates(files []*FileHash) {
 	}
 }
 
+func getenvOrDefault(key, fallback string) string {
+	value, exists := os.LookupEnv(key)
+	if !exists {
+		value = fallback
+	}
+	return value
+}
+
+func initRollbar() {
+	rollbar.SetToken(config.RollbarToken)
+	rollbar.SetEnvironment(config.Environment)
+	rollbar.SetCodeVersion(config.GitCommit)
+	rollbar.SetServerRoot(config.GithubRepo)
+}
+
 func initAwsBucket() {
 	expiration := time.Now().Add(time.Hour * 1)
 	auth, err := aws.GetAuth(config.AccessKey, config.SecretKey, "", expiration) //"" = token which isn't needed
@@ -120,10 +155,15 @@ func initAwsBucket() {
 
 func initDB() {
 	var err error
-	db, err = sql.Open("postgres", config.Database)
 
+	db, err = sql.Open("postgres", config.Database)
 	if err != nil {
-		log.Fatalf("Error opening database: %q", err)
+		panic(err)
+	}
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -136,12 +176,12 @@ func getFilesFromDB(ref string) (files []*FileHash, err error) {
 	db_err := db.QueryRow("SELECT files_hash FROM batch_downloads WHERE key = $1", ref).Scan(&result)
 
 	switch {
-		case db_err == sql.ErrNoRows:
-			err = errors.New("Could not find that batch download.")
-			return
-		case db_err != nil:
-			err = db_err
-			return
+	case db_err == sql.ErrNoRows:
+		err = errors.New("Could not find that batch download.")
+		return
+	case db_err != nil:
+		err = db_err
+		return
 	}
 
 	if result == "" {
